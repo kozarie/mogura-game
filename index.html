@@ -3,146 +3,174 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>モグラ叩きゲーム</title>
+  <title>令和の虎 モグラ叩き</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #87CEEB;
+      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
       font-family: 'Helvetica Neue', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding: 20px;
+      padding: 16px;
     }
 
     h1 {
-      font-size: 2.5rem;
-      color: #5D3A1A;
-      text-shadow: 2px 2px 0 #fff;
-      margin-bottom: 16px;
+      font-size: 1.9rem;
+      color: #FFD700;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
     }
 
     .hud {
       display: flex;
-      gap: 32px;
-      margin-bottom: 12px;
-      font-size: 1.4rem;
+      gap: 28px;
+      margin-bottom: 10px;
+      font-size: 1.3rem;
       font-weight: bold;
-      color: #333;
+      color: #fff;
     }
 
-    .hud span { color: #D2691E; }
+    .hud span { color: #FFD700; }
 
     .legend {
       display: flex;
-      gap: 20px;
-      margin-bottom: 16px;
-      font-size: 0.95rem;
-      color: #555;
+      gap: 16px;
+      margin-bottom: 14px;
+      font-size: 0.85rem;
+      color: #aaa;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
-    .legend span { font-size: 1.1rem; }
+    .legend div { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-normal  { background: #FFD700; }
+    .dot-sneaky  { background: #FF6B35; }
+    .dot-rotten  { background: #55cc44; }
 
     #startBtn {
       padding: 12px 36px;
       font-size: 1.2rem;
-      background: #FF6B35;
-      color: white;
+      background: linear-gradient(135deg, #FFD700, #FF8C00);
+      color: #1a1a2e;
+      font-weight: bold;
       border: none;
       border-radius: 30px;
       cursor: pointer;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      transition: transform 0.1s;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 18px rgba(255,215,0,0.4);
+      transition: transform 0.1s, box-shadow 0.1s;
     }
 
-    #startBtn:hover { transform: scale(1.05); }
+    #startBtn:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(255,215,0,0.6); }
     #startBtn:active { transform: scale(0.97); }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      background: #6AAB3B;
-      padding: 24px;
+      gap: 16px;
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
       border-radius: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,215,0,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
 
     .hole {
-      width: 110px;
-      height: 110px;
-      background: #3A1A00;
+      width: 105px;
+      height: 105px;
+      background: #0a0a1a;
       border-radius: 50%;
       position: relative;
       overflow: hidden;
       cursor: pointer;
-      box-shadow: inset 0 6px 16px rgba(0,0,0,0.6);
+      box-shadow: inset 0 6px 20px rgba(0,0,0,0.8), 0 0 0 3px #222;
     }
 
-    .mole {
+    .mole-wrap {
       position: absolute;
       bottom: -100%;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 3.2rem;
-      line-height: 1;
+      left: 0; right: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       transition: bottom 0.15s ease-out;
-      user-select: none;
       pointer-events: none;
+      user-select: none;
     }
 
-    /* 意地悪モグラは出てくるのが速い */
-    .hole.sneaky .mole {
-      transition: bottom 0.08s ease-out;
+    .hole.up .mole-wrap { bottom: 0; }
+
+    .mole-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top;
+      border: 2px solid #FFD700;
+      display: block;
     }
 
-    .hole.up .mole { bottom: 8%; }
-
-    /* 腐ったモグラ：少し揺れる */
-    .hole.rotten .mole {
-      animation: wobble 0.4s infinite alternate;
+    .mole-name {
+      font-size: 0.55rem;
+      color: #FFD700;
+      margin-top: 2px;
+      text-align: center;
+      white-space: nowrap;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px #000;
     }
-    @keyframes wobble {
-      from { transform: translateX(-50%) rotate(-5deg); }
-      to   { transform: translateX(-50%) rotate(5deg); }
+
+    /* 意地悪モグラ（オレンジ枠） */
+    .hole.sneaky .mole-img { border-color: #FF6B35; }
+    .hole.sneaky .mole-wrap { transition: bottom 0.07s ease-out; }
+
+    /* 腐ったモグラ（緑フィルター） */
+    .hole.rotten .mole-img {
+      filter: hue-rotate(90deg) saturate(1.5) brightness(0.9);
+      border-color: #55cc44;
     }
 
-    /* 叩いた通常 */
-    .hole.bonk .mole { filter: brightness(0.4); }
+    /* 叩いた演出 */
+    .hole.bonk .mole-img { filter: brightness(0.3); }
     .hole.bonk::after {
       content: '💥';
       position: absolute;
-      top: 10%;
+      top: 20%;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 2rem;
-      animation: pop 0.3s ease-out forwards;
+      font-size: 2.2rem;
+      animation: pop 0.35s ease-out forwards;
+      z-index: 10;
     }
 
-    /* 腐ったモグラを叩いた */
-    .hole.bonk-rotten .mole { filter: brightness(0.3); }
+    .hole.bonk-rotten .mole-img { filter: brightness(0.3); }
     .hole.bonk-rotten::after {
-      content: '🤮';
-      position: absolute;
-      top: 5%;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 2rem;
-      animation: pop 0.4s ease-out forwards;
-    }
-
-    /* 意地悪モグラ：逃げた演出 */
-    .hole.dodged::after {
-      content: '😏';
+      content: '🤢';
       position: absolute;
       top: 15%;
       left: 50%;
       transform: translateX(-50%);
+      font-size: 2.2rem;
+      animation: pop 0.4s ease-out forwards;
+      z-index: 10;
+    }
+
+    .hole.dodged::after {
+      content: '😏';
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translateX(-50%);
       font-size: 1.8rem;
       animation: pop 0.5s ease-out forwards;
+      z-index: 10;
     }
 
     @keyframes pop {
@@ -151,7 +179,7 @@
       100% { opacity: 0; transform: translateX(-50%) scale(1); }
     }
 
-    /* フロート得点 */
+    /* フロートスコア */
     .float-score {
       position: fixed;
       font-size: 1.6rem;
@@ -159,29 +187,31 @@
       pointer-events: none;
       animation: floatUp 0.8s ease-out forwards;
       z-index: 999;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
     }
-    .float-plus  { color: #FF6B35; }
-    .float-minus { color: #cc0000; }
+    .float-plus  { color: #FFD700; }
+    .float-minus { color: #ff4444; }
     @keyframes floatUp {
       0%   { opacity: 1; transform: translateY(0); }
-      100% { opacity: 0; transform: translateY(-60px); }
+      100% { opacity: 0; transform: translateY(-70px); }
     }
 
     #result {
-      margin-top: 24px;
-      font-size: 1.8rem;
+      margin-top: 20px;
+      font-size: 1.6rem;
       font-weight: bold;
-      color: #5D3A1A;
-      min-height: 2.4rem;
-      text-shadow: 1px 1px 0 #fff;
+      color: #FFD700;
+      min-height: 2.2rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      text-align: center;
     }
 
-    .warn { color: #E00 !important; animation: blink 0.5s infinite; }
+    .warn { color: #ff4444 !important; animation: blink 0.5s infinite; }
     @keyframes blink { 50% { opacity: 0.4; } }
   </style>
 </head>
 <body>
-  <h1>🐹 モグラ叩き</h1>
+  <h1>🐯 令和の虎 モグラ叩き</h1>
 
   <div class="hud">
     <div>スコア: <span id="score">0</span></div>
@@ -189,28 +219,62 @@
   </div>
 
   <div class="legend">
-    <div><span>🐹</span> 普通 +1</div>
-    <div><span>💨</span> 意地悪 +1（逃げる！）</div>
-    <div><span>🤢</span> 腐ったら -1</div>
+    <div><div class="dot dot-normal"></div> 普通の虎 +1</div>
+    <div><div class="dot dot-sneaky"></div> 意地悪な虎（逃げる）</div>
+    <div><div class="dot dot-rotten"></div> 腐った虎 -1</div>
   </div>
 
   <button id="startBtn">ゲームスタート</button>
 
   <div class="grid" id="grid">
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
-    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
+    <div class="hole"><div class="mole-wrap"><img class="mole-img" src="" alt=""><div class="mole-name"></div></div></div>
   </div>
 
   <div id="result"></div>
 
   <script>
+    const TIGERS = [
+      { name: "林 尚弘",   img: "https://reiwanotora.jp/wp-content/themes/reiwanotora/assets/images/page/tiger/tora_hayashi.webp" },
+      { name: "桑田 龍征", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_kuwata_ryusei.webp" },
+      { name: "細井ドラゴン", img: "https://reiwanotora.jp/wp-content/uploads/2025/12/tora_hosoi-1.webp" },
+      { name: "茂木 哲也", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_moteki.webp" },
+      { name: "谷本 吉紹", img: "https://reiwanotora.jp/wp-content/uploads/2025/12/tora_tanimoto.webp" },
+      { name: "高澤 有紀", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_takazawa.webp" },
+      { name: "遠藤 悠記", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_endo-1.webp" },
+      { name: "宮本 聖菜", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_sena.webp" },
+      { name: "榊原 清一", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_sakakibara.webp" },
+      { name: "寺田 高士", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_terada.webp" },
+      { name: "大石 純平", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_oishi-1.webp" },
+      { name: "岡田 真弓", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_okada.webp" },
+      { name: "孫 駿一郎", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_son.webp" },
+      { name: "竹長 篤史", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_takenaga-1.webp" },
+      { name: "荒木 杏奈", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_araki.webp" },
+      { name: "田中 絢望", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_tanaka-2.webp" },
+      { name: "竹内 亢一", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_takeuchi.webp" },
+      { name: "小林 真之", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_kobayashi.webp" },
+      { name: "野口 功司", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_noguchi-1.webp" },
+      { name: "安藤 功一郎", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_ando.webp" },
+      { name: "平出 心",   img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_hiraide.webp" },
+      { name: "南 忠則",   img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_minami-1.webp" },
+      { name: "神田 みつき", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_kanda.webp" },
+      { name: "唐沢 菜々江", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_nanae.webp" },
+      { name: "桐原 隆",   img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_kirihara.webp" },
+      { name: "田中 雄士", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_tanaka-1.webp" },
+      { name: "三浦 哲郎", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_miura.webp" },
+      { name: "島田 隆史", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_shimada-1.webp" },
+      { name: "稲葉 信",   img: "https://reiwanotora.jp/wp-content/uploads/2025/12/tora_inaba-1.webp" },
+      { name: "迫 佑樹",   img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_sako.webp" },
+      { name: "関口 ケント", img: "https://reiwanotora.jp/wp-content/uploads/2026/01/tora_sekiguchi.webp" },
+    ];
+
     const holes = Array.from(document.querySelectorAll('.hole'));
     const scoreEl = document.getElementById('score');
     const timerEl = document.getElementById('timer');
@@ -218,19 +282,8 @@
     const startBtn = document.getElementById('startBtn');
     const resultEl = document.getElementById('result');
 
-    let score = 0;
-    let timeLeft = 30;
-    let running = false;
-    let moleTimer = null;
-    let countdownTimer = null;
-    let lastHole = null;
-
-    // モグラ種別
-    // 'normal'  : 普通 🐹
-    // 'sneaky'  : 意地悪 💨（クリック直前に逃げる）
-    // 'rotten'  : 腐ったモグラ 🤢（叩くと -1）
-
-    const MOLE_EMOJI = { normal: '🐹', sneaky: '💨', rotten: '🤢' };
+    let score = 0, timeLeft = 30, running = false;
+    let moleTimer = null, countdownTimer = null, lastHole = null;
 
     function randomHole() {
       const idx = Math.floor(Math.random() * holes.length);
@@ -239,21 +292,32 @@
       return holes[idx];
     }
 
+    function randomTiger() {
+      return TIGERS[Math.floor(Math.random() * TIGERS.length)];
+    }
+
     function pickType() {
       const r = Math.random();
-      if (r < 0.15) return 'rotten';   // 15% 腐ったモグラ
-      if (r < 0.35) return 'sneaky';   // 20% 意地悪モグラ
+      if (r < 0.15) return 'rotten';
+      if (r < 0.35) return 'sneaky';
       return 'normal';
+    }
+
+    function setHoleTiger(hole, tiger) {
+      const img  = hole.querySelector('.mole-img');
+      const name = hole.querySelector('.mole-name');
+      img.src  = tiger.img;
+      img.alt  = tiger.name;
+      name.textContent = tiger.name;
     }
 
     function showMole() {
       if (!running) return;
+      const hole  = randomHole();
+      const type  = pickType();
+      const tiger = randomTiger();
 
-      const hole = randomHole();
-      const type = pickType();
-      const moleEl = hole.querySelector('.mole');
-
-      moleEl.textContent = MOLE_EMOJI[type];
+      setHoleTiger(hole, tiger);
       hole.dataset.type = type;
       hole.classList.add('up');
       if (type === 'sneaky') hole.classList.add('sneaky');
@@ -262,10 +326,9 @@
       const speed = Math.max(600, 1300 - score * 20);
 
       if (type === 'sneaky') {
-        // 意地悪モグラ：表示時間の70〜90%で先に引っ込む
-        const dodgeAt = speed * (0.70 + Math.random() * 0.20);
+        const dodgeAt = speed * (0.65 + Math.random() * 0.25);
         moleTimer = setTimeout(() => {
-          if (!hole.classList.contains('up')) return; // 既に叩かれていたら何もしない
+          if (!hole.classList.contains('up')) return;
           hole.classList.remove('up', 'sneaky');
           hole.classList.add('dodged');
           setTimeout(() => hole.classList.remove('dodged'), 500);
@@ -284,7 +347,7 @@
       el.className = `float-score ${cls}`;
       el.textContent = text;
       el.style.left = (e.clientX - 20) + 'px';
-      el.style.top  = (e.clientY - 20) + 'px';
+      el.style.top  = (e.clientY - 30) + 'px';
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 800);
     }
@@ -296,7 +359,6 @@
 
       const type = hole.dataset.type || 'normal';
       clearTimeout(moleTimer);
-
       hole.classList.remove('up', 'sneaky', 'rotten');
 
       if (type === 'rotten') {
@@ -304,45 +366,29 @@
         scoreEl.textContent = score;
         hole.classList.add('bonk-rotten');
         floatScore(e, '-1', 'float-minus');
-        setTimeout(() => {
-          hole.classList.remove('bonk-rotten');
-          showMole();
-        }, 400);
+        setTimeout(() => { hole.classList.remove('bonk-rotten'); showMole(); }, 400);
       } else {
         score++;
         scoreEl.textContent = score;
         hole.classList.add('bonk');
         floatScore(e, '+1', 'float-plus');
-        setTimeout(() => {
-          hole.classList.remove('bonk');
-          showMole();
-        }, 300);
+        setTimeout(() => { hole.classList.remove('bonk'); showMole(); }, 300);
       }
     }
 
     holes.forEach(h => h.addEventListener('click', bonk));
 
     function startGame() {
-      score = 0;
-      timeLeft = 30;
-      running = true;
+      score = 0; timeLeft = 30; running = true;
       scoreEl.textContent = '0';
       timerEl.textContent = '30';
       timerLabel.className = '';
       resultEl.textContent = '';
       startBtn.disabled = true;
       startBtn.textContent = 'ゲーム中…';
-
-      // 全穴リセット
-      holes.forEach(h => {
-        h.className = 'hole';
-        h.querySelector('.mole').textContent = '🐹';
-        delete h.dataset.type;
-      });
+      holes.forEach(h => { h.className = 'hole'; });
       lastHole = null;
-
       showMole();
-
       countdownTimer = setInterval(() => {
         timeLeft--;
         timerEl.textContent = timeLeft;
@@ -355,15 +401,9 @@
       running = false;
       clearTimeout(moleTimer);
       clearInterval(countdownTimer);
-
-      holes.forEach(h => {
-        h.className = 'hole';
-        h.querySelector('.mole').textContent = '🐹';
-      });
-
-      let msg = score >= 20 ? '🏆 天才！' : score >= 12 ? '👍 いいね！' : score >= 5 ? '😄 もう一回！' : '🤣 ほぼ逃げられたね';
-      resultEl.textContent = `${msg} スコア: ${score}点`;
-
+      holes.forEach(h => h.className = 'hole');
+      const msg = score >= 20 ? '🏆 出資承認！' : score >= 12 ? '👍 惜しい！継続審議' : score >= 5 ? '😅 もう一回プレゼンして' : '❌ 出資見送り…';
+      resultEl.textContent = `${msg}（${score}点）`;
       startBtn.disabled = false;
       startBtn.textContent = 'もう一度';
     }
