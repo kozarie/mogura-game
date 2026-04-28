@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>モグラ叩きゲーム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #87CEEB;
+      font-family: 'Helvetica Neue', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #5D3A1A;
+      text-shadow: 2px 2px 0 #fff;
+      margin-bottom: 16px;
+    }
+
+    .hud {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 12px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .hud span { color: #D2691E; }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    .legend span { font-size: 1.1rem; }
+
+    #startBtn {
+      padding: 12px 36px;
+      font-size: 1.2rem;
+      background: #FF6B35;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transition: transform 0.1s;
+    }
+
+    #startBtn:hover { transform: scale(1.05); }
+    #startBtn:active { transform: scale(0.97); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      background: #6AAB3B;
+      padding: 24px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .hole {
+      width: 110px;
+      height: 110px;
+      background: #3A1A00;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: inset 0 6px 16px rgba(0,0,0,0.6);
+    }
+
+    .mole {
+      position: absolute;
+      bottom: -100%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 3.2rem;
+      line-height: 1;
+      transition: bottom 0.15s ease-out;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* 意地悪モグラは出てくるのが速い */
+    .hole.sneaky .mole {
+      transition: bottom 0.08s ease-out;
+    }
+
+    .hole.up .mole { bottom: 8%; }
+
+    /* 腐ったモグラ：少し揺れる */
+    .hole.rotten .mole {
+      animation: wobble 0.4s infinite alternate;
+    }
+    @keyframes wobble {
+      from { transform: translateX(-50%) rotate(-5deg); }
+      to   { transform: translateX(-50%) rotate(5deg); }
+    }
+
+    /* 叩いた通常 */
+    .hole.bonk .mole { filter: brightness(0.4); }
+    .hole.bonk::after {
+      content: '💥';
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2rem;
+      animation: pop 0.3s ease-out forwards;
+    }
+
+    /* 腐ったモグラを叩いた */
+    .hole.bonk-rotten .mole { filter: brightness(0.3); }
+    .hole.bonk-rotten::after {
+      content: '🤮';
+      position: absolute;
+      top: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2rem;
+      animation: pop 0.4s ease-out forwards;
+    }
+
+    /* 意地悪モグラ：逃げた演出 */
+    .hole.dodged::after {
+      content: '😏';
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.8rem;
+      animation: pop 0.5s ease-out forwards;
+    }
+
+    @keyframes pop {
+      0%   { opacity: 1; transform: translateX(-50%) scale(0.5); }
+      60%  { opacity: 1; transform: translateX(-50%) scale(1.3); }
+      100% { opacity: 0; transform: translateX(-50%) scale(1); }
+    }
+
+    /* フロート得点 */
+    .float-score {
+      position: fixed;
+      font-size: 1.6rem;
+      font-weight: bold;
+      pointer-events: none;
+      animation: floatUp 0.8s ease-out forwards;
+      z-index: 999;
+    }
+    .float-plus  { color: #FF6B35; }
+    .float-minus { color: #cc0000; }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-60px); }
+    }
+
+    #result {
+      margin-top: 24px;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #5D3A1A;
+      min-height: 2.4rem;
+      text-shadow: 1px 1px 0 #fff;
+    }
+
+    .warn { color: #E00 !important; animation: blink 0.5s infinite; }
+    @keyframes blink { 50% { opacity: 0.4; } }
+  </style>
+</head>
+<body>
+  <h1>🐹 モグラ叩き</h1>
+
+  <div class="hud">
+    <div>スコア: <span id="score">0</span></div>
+    <div id="timerLabel">残り: <span id="timer">30</span>秒</div>
+  </div>
+
+  <div class="legend">
+    <div><span>🐹</span> 普通 +1</div>
+    <div><span>💨</span> 意地悪 +1（逃げる！）</div>
+    <div><span>🤢</span> 腐ったら -1</div>
+  </div>
+
+  <button id="startBtn">ゲームスタート</button>
+
+  <div class="grid" id="grid">
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+    <div class="hole"><div class="mole">🐹</div></div>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    const holes = Array.from(document.querySelectorAll('.hole'));
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const timerLabel = document.getElementById('timerLabel');
+    const startBtn = document.getElementById('startBtn');
+    const resultEl = document.getElementById('result');
+
+    let score = 0;
+    let timeLeft = 30;
+    let running = false;
+    let moleTimer = null;
+    let countdownTimer = null;
+    let lastHole = null;
+
+    // モグラ種別
+    // 'normal'  : 普通 🐹
+    // 'sneaky'  : 意地悪 💨（クリック直前に逃げる）
+    // 'rotten'  : 腐ったモグラ 🤢（叩くと -1）
+
+    const MOLE_EMOJI = { normal: '🐹', sneaky: '💨', rotten: '🤢' };
+
+    function randomHole() {
+      const idx = Math.floor(Math.random() * holes.length);
+      if (holes[idx] === lastHole) return randomHole();
+      lastHole = holes[idx];
+      return holes[idx];
+    }
+
+    function pickType() {
+      const r = Math.random();
+      if (r < 0.15) return 'rotten';   // 15% 腐ったモグラ
+      if (r < 0.35) return 'sneaky';   // 20% 意地悪モグラ
+      return 'normal';
+    }
+
+    function showMole() {
+      if (!running) return;
+
+      const hole = randomHole();
+      const type = pickType();
+      const moleEl = hole.querySelector('.mole');
+
+      moleEl.textContent = MOLE_EMOJI[type];
+      hole.dataset.type = type;
+      hole.classList.add('up');
+      if (type === 'sneaky') hole.classList.add('sneaky');
+      if (type === 'rotten') hole.classList.add('rotten');
+
+      const speed = Math.max(600, 1300 - score * 20);
+
+      if (type === 'sneaky') {
+        // 意地悪モグラ：表示時間の70〜90%で先に引っ込む
+        const dodgeAt = speed * (0.70 + Math.random() * 0.20);
+        moleTimer = setTimeout(() => {
+          if (!hole.classList.contains('up')) return; // 既に叩かれていたら何もしない
+          hole.classList.remove('up', 'sneaky');
+          hole.classList.add('dodged');
+          setTimeout(() => hole.classList.remove('dodged'), 500);
+          setTimeout(showMole, 200);
+        }, dodgeAt);
+      } else {
+        moleTimer = setTimeout(() => {
+          hole.classList.remove('up', 'rotten');
+          showMole();
+        }, speed);
+      }
+    }
+
+    function floatScore(e, text, cls) {
+      const el = document.createElement('div');
+      el.className = `float-score ${cls}`;
+      el.textContent = text;
+      el.style.left = (e.clientX - 20) + 'px';
+      el.style.top  = (e.clientY - 20) + 'px';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 800);
+    }
+
+    function bonk(e) {
+      if (!running) return;
+      const hole = e.currentTarget;
+      if (!hole.classList.contains('up')) return;
+
+      const type = hole.dataset.type || 'normal';
+      clearTimeout(moleTimer);
+
+      hole.classList.remove('up', 'sneaky', 'rotten');
+
+      if (type === 'rotten') {
+        score = Math.max(0, score - 1);
+        scoreEl.textContent = score;
+        hole.classList.add('bonk-rotten');
+        floatScore(e, '-1', 'float-minus');
+        setTimeout(() => {
+          hole.classList.remove('bonk-rotten');
+          showMole();
+        }, 400);
+      } else {
+        score++;
+        scoreEl.textContent = score;
+        hole.classList.add('bonk');
+        floatScore(e, '+1', 'float-plus');
+        setTimeout(() => {
+          hole.classList.remove('bonk');
+          showMole();
+        }, 300);
+      }
+    }
+
+    holes.forEach(h => h.addEventListener('click', bonk));
+
+    function startGame() {
+      score = 0;
+      timeLeft = 30;
+      running = true;
+      scoreEl.textContent = '0';
+      timerEl.textContent = '30';
+      timerLabel.className = '';
+      resultEl.textContent = '';
+      startBtn.disabled = true;
+      startBtn.textContent = 'ゲーム中…';
+
+      // 全穴リセット
+      holes.forEach(h => {
+        h.className = 'hole';
+        h.querySelector('.mole').textContent = '🐹';
+        delete h.dataset.type;
+      });
+      lastHole = null;
+
+      showMole();
+
+      countdownTimer = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        if (timeLeft <= 10) timerLabel.classList.add('warn');
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function endGame() {
+      running = false;
+      clearTimeout(moleTimer);
+      clearInterval(countdownTimer);
+
+      holes.forEach(h => {
+        h.className = 'hole';
+        h.querySelector('.mole').textContent = '🐹';
+      });
+
+      let msg = score >= 20 ? '🏆 天才！' : score >= 12 ? '👍 いいね！' : score >= 5 ? '😄 もう一回！' : '🤣 ほぼ逃げられたね';
+      resultEl.textContent = `${msg} スコア: ${score}点`;
+
+      startBtn.disabled = false;
+      startBtn.textContent = 'もう一度';
+    }
+
+    startBtn.addEventListener('click', startGame);
+  </script>
+</body>
+</html>
